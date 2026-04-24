@@ -86,6 +86,40 @@ service cloud.firestore {
       allow update: if isAdmin() && isValidId(orderId);
     }
 
+    // Wishlist Rules
+    function isValidWishlist(data) {
+      return data.keys().hasAll(['userId', 'productId', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.productId is string &&
+             data.createdAt == request.time;
+    }
+
+    match /wishlists/{wishlistId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isSignedIn() && isValidId(wishlistId) && isValidWishlist(incoming());
+      allow delete: if isSignedIn() && isValidId(wishlistId) && isOwner(existing().userId);
+    }
+
+    // Review Rules
+    function isValidReview(data) {
+      return data.keys().hasAll(['userId', 'productId', 'rating', 'comment', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.productId is string &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 1000 &&
+             data.createdAt == request.time;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(reviewId) && isValidReview(incoming());
+      allow update: if isSignedIn() && isValidId(reviewId) && isOwner(existing().userId) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'comment']) &&
+        incoming().rating is number && incoming().rating >= 1 && incoming().rating <= 5 &&
+        incoming().comment is string && incoming().comment.size() <= 1000;
+      allow delete: if isSignedIn() && isValidId(reviewId) && (isOwner(existing().userId) || isAdmin());
+    }
+
     // Verification Reports
     match /verifications/{reportId} {
       allow read: if isSignedIn();

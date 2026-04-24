@@ -12,6 +12,8 @@ import ProducerDashboard from './pages/ProducerDashboard';
 import AgentDashboard from './pages/AgentDashboard';
 import Cart from './pages/Cart';
 import AuthPage from './pages/AuthPage';
+import Ambassador from './pages/Ambassador';
+import Profile from './pages/Profile';
 import Layout from './components/Layout';
 
 interface AuthContextType {
@@ -64,6 +66,8 @@ export default function App() {
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/ambassador" element={<Ambassador />} />
+            <Route path="/profile" element={user ? <Profile /> : <Navigate to="/auth" />} />
             
             {/* Protected Routes */}
             <Route 

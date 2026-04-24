@@ -142,8 +142,9 @@ function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">الدعم</h4>
+            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">الدعم والمجتمع</h4>
             <ul className="space-y-3">
+              <li><Link to="/ambassador" className="hover:text-secondary transition-colors text-secondary font-bold">برنامج السفراء والمكافآت</Link></li>
               <li><Link to="/faq" className="hover:text-secondary transition-colors">الأسئلة الشائعة</Link></li>
               <li><Link to="/shipping" className="hover:text-secondary transition-colors">معلومات الشحن</Link></li>
               <li><Link to="/terms" className="hover:text-secondary transition-colors">الشروط والأحكام</Link></li>

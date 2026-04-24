@@ -52,6 +52,15 @@ export interface OrderItem {
   imageUrl: string;
 }
 
+export interface TrackingInfo {
+  carrier?: string;
+  trackingNumber?: string;
+  url?: string;
+  statusDetails?: string;
+  estimatedDelivery?: string;
+  updatedAt?: string;
+}
+
 export interface Order {
   id: string;
   buyerId: string;
@@ -59,6 +68,23 @@ export interface Order {
   totalAmount: number;
   status: OrderStatus;
   shippingAddress: string;
+  trackingInfo?: TrackingInfo;
+  createdAt: string;
+}
+
+export interface Wishlist {
+  id: string;
+  userId: string;
+  productId: string;
+  createdAt: string;
+}
+
+export interface Review {
+  id: string;
+  userId: string;
+  productId: string;
+  rating: number;
+  comment: string;
   createdAt: string;
 }
 
