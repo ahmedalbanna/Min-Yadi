@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { db } from '../lib/firebase';
 import { collection, addDoc, deleteDoc, doc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
 
 interface ProductCardProps {
   product: Product;
@@ -24,15 +25,19 @@ export default function ProductCard({ product }: ProductCardProps) {
   useEffect(() => {
     async function checkWishlist() {
       if (!user) return;
-      const q = query(
-        collection(db, 'wishlists'), 
-        where('userId', '==', user.uid),
-        where('productId', '==', product.id)
-      );
-      const docs = await getDocs(q);
-      if (!docs.empty) {
-        setIsWishlisted(true);
-        setWishlistId(docs.docs[0].id);
+      try {
+        const q = query(
+          collection(db, 'wishlists'), 
+          where('userId', '==', user.uid),
+          where('productId', '==', product.id)
+        );
+        const docs = await getDocs(q);
+        if (!docs.empty) {
+          setIsWishlisted(true);
+          setWishlistId(docs.docs[0].id);
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.LIST, 'wishlists');
       }
     }
     checkWishlist();
@@ -45,13 +50,14 @@ export default function ProductCard({ product }: ProductCardProps) {
       return;
     }
     setLoadingHeart(true);
+    const path = 'wishlists';
     try {
       if (isWishlisted && wishlistId) {
-        await deleteDoc(doc(db, 'wishlists', wishlistId));
+        await deleteDoc(doc(db, path, wishlistId));
         setIsWishlisted(false);
         setWishlistId(null);
       } else {
-        const docRef = await addDoc(collection(db, 'wishlists'), {
+        const docRef = await addDoc(collection(db, path), {
           userId: user.uid,
           productId: product.id,
           createdAt: serverTimestamp()
@@ -60,7 +66,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         setWishlistId(docRef.id);
       }
     } catch (err) {
-      console.error(err);
+      handleFirestoreError(err, isWishlisted ? OperationType.DELETE : OperationType.CREATE, path);
     } finally {
       setLoadingHeart(false);
     }

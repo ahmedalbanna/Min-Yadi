@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../App';
 import { Product } from '../types';
@@ -45,7 +45,7 @@ export default function ProducerDashboard() {
         currency: 'USD',
         qualityStatus: 'pending',
         tags: [],
-        createdAt: new Date().toISOString()
+        createdAt: serverTimestamp()
       });
       setProducts([...products, { id: docRef.id, ...newProduct, producerId: user.uid, currency: 'USD', qualityStatus: 'pending', tags: [], createdAt: new Date().toISOString() } as Product]);
       setIsAdding(false);

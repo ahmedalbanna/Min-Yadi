@@ -8,6 +8,7 @@ import { BadgeCheck, MapPin, Play, Pause, ShoppingBag, ArrowRight, Heart, Star }
 import { formatPrice, cn } from '../lib/utils';
 import { motion } from 'motion/react';
 import { useAuth } from '../App';
+import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -29,9 +30,13 @@ export default function ProductDetails() {
   useEffect(() => {
     async function fetchProduct() {
       if (!id) return;
-      const docSnap = await getDoc(doc(db, 'products', id));
-      if (docSnap.exists()) {
-        setProduct({ id: docSnap.id, ...docSnap.data() } as Product);
+      try {
+        const docSnap = await getDoc(doc(db, 'products', id));
+        if (docSnap.exists()) {
+          setProduct({ id: docSnap.id, ...docSnap.data() } as Product);
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.GET, `products/${id}`);
       }
       
       // Fetch Reviews
@@ -40,7 +45,7 @@ export default function ProductDetails() {
         const rSnap = await getDocs(qR);
         setReviews(rSnap.docs.map(d => ({ id: d.id, ...d.data() } as Review)));
       } catch (err) {
-        console.error(err);
+        handleFirestoreError(err, OperationType.LIST, 'reviews');
       }
       
       setLoading(false);
@@ -51,11 +56,15 @@ export default function ProductDetails() {
   useEffect(() => {
     async function checkWishlist() {
       if (!user || !id) return;
-      const q = query(collection(db, 'wishlists'), where('userId', '==', user.uid), where('productId', '==', id));
-      const docs = await getDocs(q);
-      if (!docs.empty) {
-        setIsWishlisted(true);
-        setWishlistId(docs.docs[0].id);
+      try {
+        const q = query(collection(db, 'wishlists'), where('userId', '==', user.uid), where('productId', '==', id));
+        const docs = await getDocs(q);
+        if (!docs.empty) {
+          setIsWishlisted(true);
+          setWishlistId(docs.docs[0].id);
+        }
+      } catch (err) {
+        handleFirestoreError(err, OperationType.LIST, 'wishlists');
       }
     }
     checkWishlist();
@@ -64,13 +73,14 @@ export default function ProductDetails() {
   const toggleWishlist = async () => {
     if (!user || !id) return alert('سجل الدخول للمتابعة');
     setLoadingAction(true);
+    const path = 'wishlists';
     try {
       if (isWishlisted && wishlistId) {
-        await deleteDoc(doc(db, 'wishlists', wishlistId));
+        await deleteDoc(doc(db, path, wishlistId));
         setIsWishlisted(false);
         setWishlistId(null);
       } else {
-        const docRef = await addDoc(collection(db, 'wishlists'), {
+        const docRef = await addDoc(collection(db, path), {
           userId: user.uid,
           productId: id,
           createdAt: serverTimestamp()
@@ -79,7 +89,7 @@ export default function ProductDetails() {
         setWishlistId(docRef.id);
       }
     } catch (e) {
-      console.error(e);
+      handleFirestoreError(e, isWishlisted ? OperationType.DELETE : OperationType.CREATE, path);
     }
     setLoadingAction(false);
   };
@@ -88,8 +98,9 @@ export default function ProductDetails() {
     e.preventDefault();
     if (!user || !id) return alert('سجل الدخول لإضافة تقييم');
     setLoadingAction(true);
+    const path = 'reviews';
     try {
-      const docRef = await addDoc(collection(db, 'reviews'), {
+      const docRef = await addDoc(collection(db, path), {
         userId: user.uid,
         productId: id,
         rating,
@@ -100,7 +111,7 @@ export default function ProductDetails() {
       setComment('');
       setRating(5);
     } catch (e) {
-      console.error(e);
+      handleFirestoreError(e, OperationType.CREATE, path);
     }
     setLoadingAction(false);
   };

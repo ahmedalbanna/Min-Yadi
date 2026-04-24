@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, query, getDocs, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Product } from '../types';
 import { CATEGORIES, REGIONS } from '../constants';
@@ -8,6 +8,7 @@ import { Search, ChevronRight, Sprout, ShieldCheck, Globe, SlidersHorizontal } f
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import { handleFirestoreError, OperationType } from '../lib/firestore-utils';
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -43,7 +44,7 @@ export default function Home() {
         
         setProducts(filtered);
       } catch (err) {
-        console.error(err);
+        handleFirestoreError(err, OperationType.LIST, 'products');
       } finally {
         setLoading(false);
       }

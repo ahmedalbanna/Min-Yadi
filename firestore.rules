@@ -1,11 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     // Global helpers
     function isSignedIn() { return request.auth != null; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
@@ -15,11 +10,24 @@ service cloud.firestore {
     
     // Roles (Lookup required for secure role-based access)
     // Note: get() lookups are cached per request.
-    function getUserData(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
-    function hasRole(role) { return isSignedIn() && getUserData(request.auth.uid).role == role; }
-    function isAdmin() { return hasRole('admin'); }
-    function isAgent() { return hasRole('agent'); }
-    function isProducer() { return hasRole('producer'); }
+    function getUserData(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+    function hasRole(role) {
+      return isSignedIn() && getUserData(request.auth.uid).data.get('role', 'buyer') == role;
+    }
+    function isAdmin() {
+       let userDoc = getUserData(request.auth.uid);
+       return isSignedIn() && userDoc != null && userDoc.data.get('role', 'buyer') == 'admin';
+    }
+    function isAgent() {
+       let userDoc = getUserData(request.auth.uid);
+       return isSignedIn() && userDoc != null && userDoc.data.get('role', 'buyer') == 'agent';
+    }
+    function isProducer() {
+       let userDoc = getUserData(request.auth.uid);
+       return isSignedIn() && userDoc != null && userDoc.data.get('role', 'buyer') == 'producer';
+    }
 
     // User Rules
     function isValidUser(data) {
@@ -125,6 +133,11 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isAgent() && isValidId(reportId) && incoming().agentId == request.auth.uid;
       allow update, delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

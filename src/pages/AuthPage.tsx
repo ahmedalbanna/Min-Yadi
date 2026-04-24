@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword 
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { UserRole } from '../types';
 import { LogIn, UserPlus, Globe } from 'lucide-react';
@@ -33,7 +33,7 @@ export default function AuthPage() {
           name: result.user.displayName || 'Unnamed User',
           email: result.user.email,
           role: 'buyer', // Default for social login
-          createdAt: new Date().toISOString(),
+          createdAt: serverTimestamp(),
         });
       }
       navigate('/');
@@ -56,7 +56,7 @@ export default function AuthPage() {
           name,
           email,
           role,
-          createdAt: new Date().toISOString(),
+          createdAt: serverTimestamp(),
         });
         navigate(role === 'producer' ? '/producer' : '/');
       }
