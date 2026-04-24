@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    // Roles (Lookup required for secure role-based access)
+    function getUserData(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
+    function hasRole(role) { return isSignedIn() && getUserData(request.auth.uid).role == role; }
+    function isAdmin() { return hasRole('admin'); }
+    function isAgent() { return hasRole('agent'); }
+    function isProducer() { return hasRole('producer'); }
+
+    // User Rules
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'role', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() <= 100 &&
+             data.role in ['producer', 'buyer', 'agent'] &&
+             data.createdAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn(); // Users can see each other (simplified for marketplace)
+      allow create: if isSignedIn() && isValidUser(incoming());
+      allow update: if isOwner(userId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'bio', 'photoUrl', 'phone'])
+      );
+    }
+
+    // Region Rules (Public read, Admin write)
+    match /regions/{regionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Product Rules
+    function isValidProduct(data) {
+      return data.keys().hasAll(['nameAr', 'nameEn', 'category', 'regionId', 'producerId', 'price', 'currency', 'qualityStatus', 'createdAt']) &&
+             data.nameAr is string && data.nameAr.size() <= 200 &&
+             data.nameEn is string && data.nameEn.size() <= 200 &&
+             data.price is number && data.price >= 0 &&
+             data.producerId == request.auth.uid &&
+             data.createdAt == request.time;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isProducer() && isValidProduct(incoming());
+      allow update: if (isOwner(existing().producerId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['nameAr', 'nameEn', 'descriptionAr', 'descriptionEn', 'category', 'regionId', 'price', 'currency', 'imageUrl', 'audioStoryUrl', 'stock', 'tags'])
+      )) || (isAgent() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['qualityStatus'])
+      )) || isAdmin();
+      allow delete: if isOwner(existing().producerId) || isAdmin();
+    }
+
+    // Order Rules
+    function isValidOrder(data) {
+      return data.keys().hasAll(['buyerId', 'items', 'totalAmount', 'status', 'createdAt']) &&
+             data.buyerId == request.auth.uid &&
+             data.totalAmount is number &&
+             data.items is list &&
+             data.status == 'pending' &&
+             data.createdAt == request.time;
+    }
+
+    match /orders/{orderId} {
+      allow read: if isOwner(resource.data.buyerId) || isAdmin();
+      allow create: if isSignedIn() && isValidOrder(incoming());
+      allow update: if isAdmin(); // Only admins/system can update order status for now
+    }
+
+    // Verification Rules
+    match /verifications/{reportId} {
+      allow read: if true;
+      allow create: if isAgent() && incoming().agentId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+  }
+}

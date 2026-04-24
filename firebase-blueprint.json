@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["producer", "buyer", "agent", "admin"] },
+        "regionId": { "type": "string" },
+        "bio": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "phone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "role", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Artisanal or agricultural product",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nameAr": { "type": "string" },
+        "nameEn": { "type": "string" },
+        "descriptionAr": { "type": "string" },
+        "descriptionEn": { "type": "string" },
+        "category": { "type": "string" },
+        "regionId": { "type": "string" },
+        "producerId": { "type": "string" },
+        "price": { "type": "number" },
+        "currency": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "audioStoryUrl": { "type": "string" },
+        "qualityStatus": { "type": "string", "enum": ["pending", "bronze", "silver", "gold"] },
+        "stock": { "type": "integer" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nameAr", "nameEn", "category", "regionId", "producerId", "price", "currency", "qualityStatus", "createdAt"]
+    },
+    "Region": {
+      "title": "Region",
+      "description": "Yemeni region",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nameAr": { "type": "string" },
+        "nameEn": { "type": "string" },
+        "descriptionAr": { "type": "string" },
+        "descriptionEn": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["nameAr", "nameEn"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Purchase order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "quantity": { "type": "integer" },
+              "price": { "type": "number" }
+            }
+          }
+        },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid", "shipping", "delivered", "cancelled"] },
+        "shippingAddress": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["buyerId", "items", "totalAmount", "status", "createdAt"]
+    },
+    "VerificationReport": {
+      "title": "Verification Report",
+      "description": "Quality check report by an agent",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "agentId": { "type": "string" },
+        "audioReportUrl": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string", "enum": ["bronze", "silver", "gold", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "agentId", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "Application users"
+    },
+    "products": {
+      "schema": "Product",
+      "description": "Available products"
+    },
+    "regions": {
+      "schema": "Region",
+      "description": "Yemeni regions"
+    },
+    "orders": {
+      "schema": "Order",
+      "description": "Buyer orders"
+    },
+    "verifications": {
+      "schema": "VerificationReport",
+      "description": "Quality verification reports"
+    }
+  }
+}
